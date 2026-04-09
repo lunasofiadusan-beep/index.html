@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Pro - Sistema de Seguimiento</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --success: #15803d;
+            --warning: #b45309;
+            --danger: #b91c1c;
+            --neutral: #64748b;
+            --bg: #f1f5f9;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Navegación y Buscador */
+        nav { background: #0f172a; color: white; padding: 1rem 2rem; display: flex; align-items: center; gap: 15px; justify-content: space-between; }
+        .nav-links { display: flex; gap: 10px; }
+        .nav-link { color: #94a3b8; text-decoration: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .nav-link.active { background: var(--primary); color: white; }
+        
+        .search-box { position: relative; }
+        .search-box input { padding: 8px 12px; border-radius: 6px; border: none; width: 250px; font-size: 0.9rem; }
+
+        /* Estructura */
+        .content { padding: 2rem; flex: 1; overflow-y: auto; max-width: 1300px; margin: 0 auto; width: 100%; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+
+        /* Tablas Profesionales */
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 0.75rem; color: #475569; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; vertical-align: top; }
+
+        /* Badges de Estado Profesional */
+        .status { padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; display: inline-block; }
+        .status-interesado { background: #dcfce7; color: #166534; } /* Verde */
+        .status-seguimiento { background: #fef3c7; color: #92400e; } /* Naranja */
+        .status-sin-respuesta { background: #f1f5f9; color: #475569; } /* Blanco */
+        .status-descartado { background: #fee2e2; color: #991b1b; } /* Rojo */
+
+        /* Formularios */
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 5px; }
+        button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; transition: 0.2s; padding: 10px 15px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-action { background: #e2e8f0; color: #1e293b; font-size: 0.8rem; }
+        .btn-delete { background: #fee2e2; color: #b91c1c; font-size: 0.75rem; }
+
+        .historial-box { max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 6px; font-size: 0.8rem; }
+        .historial-item { border-bottom: 1px solid #e2e8f0; padding: 5px 0; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <h2 style="margin:0; font-size: 1.2rem; color: #60a5fa;">CRM SALESPRO</h2>
+        <div class="nav-links">
+            <div class="nav-link active" onclick="showPage('p-crear', this)">Nuevo Registro</div>
+            <div class="nav-link" onclick="showPage('p-llamadas', this)">Panel de Control</div>
+            <div class="nav-link" onclick="showPage('p-citas', this)">Agenda de Visitas</div>
+            <div class="nav-link" onclick="showPage('p-seguimiento', this)">Pendientes Seguimiento</div>
+        </div>
+    </div>
+    <div class="search-box">
+        <input type="text" id="globalSearch" placeholder="Buscar por ID o Nombre..." onkeyup="searchGlobal()">
+    </div>
+</nav>
+
+<div class="content">
+    
+    <div id="p-crear" class="page active">
+        <div class="card">
+            <h3>Registro de Nuevo Cliente</h3>
+            <form id="formCliente">
+                <div class="grid-form">
+                    <div><label>Nombre Completo</label><input type="text" id="nombre" required></div>
+                    <div><label>Teléfono</label><input type="tel" id="telefono" required></div>
+                    <div><label>Correo Electrónico</label><input type="email" id="correo"></div>
+                    <div><label>Localidad</label><input type="text" id="localidad"></div>
+                    <div><label>Dirección</label><input type="text" id="direccion"></div>
+                    <div><label>Código Postal</label><input type="text" id="cp"></div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top:20px">Crear Registro y Generar ID</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="p-llamadas" class="page">
+        <div class="card">
+            <h3>Control Operativo de Clientes</h3>
+            <table id="mainTable">
+                <thead>
+                    <tr>
+                        <th>ID Reg.</th>
+                        <th>Cliente</th>
+                        <th>Contacto</th>
+                        <th>Estado Actual</th>
+                        <th>Acción</th>
+                        <th>Historial Completo</th>
+                    </tr>
+                </thead>
+                <tbody id="listaLlamadas"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="p-citas" class="page">
+        <div class="card">
+            <h3>Citas Confirmadas / Reuniones</h3>
+            <div id="agendaContenedor"></div>
+        </div>
+    </div>
+
+    <div id="p-seguimiento" class="page">
+        <div class="card">
+            <h3>Calendario de Re-llamadas Programadas</h3>
+            <div id="seguimientoContenedor"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let clientes = JSON.parse(localStorage.getItem('crm_v2')) || [];
+    let queryBusqueda = "";
+
+    function save() { localStorage.setItem('crm_v2', JSON.stringify(clientes)); }
+
+    function showPage(id, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        renderAll();
+    }
+
+    function searchGlobal() {
+        queryBusqueda = document.getElementById('globalSearch').value.toLowerCase();
+        renderAll();
+    }
+
+    // Registro de cliente con ID ÚNICO
+    document.getElementById('formCliente').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nuevo = {
+            id: Math.floor(1000 + Math.random() * 9000), // ID de 4 dígitos
+            nombre: document.getElementById('nombre').value,
+            telefono: document.getElementById('telefono').value,
+            correo: document.getElementById('correo').value || 'Sin correo',
+            localidad: document.getElementById('localidad').value,
+            direccion: document.getElementById('direccion').value,
+            cp: document.getElementById('cp').value,
+            llamadas: [],
+            cita: null,
+            rellamada: null
+        };
+        clientes.push(nuevo);
+        save();
+        e.target.reset();
+        alert(`Cliente registrado con ID: ${nuevo.id}`);
+        showPage('p-llamadas', document.querySelectorAll('.nav-link')[1]);
+    });
+
+    function gestionarAccion(clienteId) {
+        const idx = clientes.findIndex(c => c.id === clienteId);
+        const comentario = prompt("Comentario de la gestión:");
+        if (comentario === null) return;
+
+        const seleccion = prompt("Seleccione Resultado:\n1. Sin respuesta (Blanco)\n2. Programar nueva llamada (Naranja)\n3. Concertar Cita (Verde)\n4. Descartar Cliente (Rojo)");
+        
+        let estado = "sin-respuesta";
+        if (seleccion === "2") {
+            estado = "seguimiento";
+            clientes[idx].rellamada = prompt("Fecha para volver a llamar (ej: Mañana 10:00):");
+        } else if (seleccion === "3") {
+            estado = "interesado";
+            const fecha = prompt("Fecha de la cita:");
+            const hora = prompt("Hora de la cita:");
+            const lugar = prompt("Lugar de la reunión:");
+            clientes[idx].cita = { fecha, hora, lugar };
+        } else if (seleccion === "4") {
+            estado = "descartado";
+        }
+
+        clientes[idx].llamadas.push({
+            fecha: new Date().toLocaleString(),
+            estado: estado,
+            nota: comentario
+        });
+
+        save();
+        renderAll();
+    }
+
+    function eliminarCita(id) {
+        const idx = clientes.findIndex(c => c.id === id);
+        clientes[idx].cita = null;
+        save();
+        renderAll();
+    }
+
+    function eliminarSeguimiento(id) {
+        const idx = clientes.findIndex(c => c.id === id);
+        clientes[idx].rellamada = null;
+        save();
+        renderAll();
+    }
+
+    function renderAll() {
+        const filtro = clientes.filter(c => 
+            c.nombre.toLowerCase().includes(queryBusqueda) || 
+            c.id.toString().includes(queryBusqueda)
+        );
+
+        // Render Principal
+        const tbody = document.getElementById('listaLlamadas');
+        tbody.innerHTML = "";
+        filtro.forEach(c => {
+            const ultima = c.llamadas[c.llamadas.length - 1] || { estado: 'sin-respuesta', nota: 'Sin registros' };
+            const historial = c.llamadas.slice().reverse().map(l => `
+                <div class="historial-item">
+                    <b>${l.fecha}</b> - <span class="status status-${l.estado}">${l.estado.replace('-', ' ')}</span><br>${l.nota}
+                </div>
+            `).join("");
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><b style="color:var(--primary)">#${c.id}</b></td>
+                    <td><b>${c.nombre}</b><br><small>${c.localidad}</small></td>
+                    <td>${c.telefono}</td>
+                    <td><span class="status status-${ultima.estado}">${ultima.estado.replace('-', ' ')}</span></td>
+                    <td><button class="btn-action" onclick="gestionarAccion(${c.id})">Gestionar</button></td>
+                    <td><div class="historial-box">${historial || 'No hay actividad'}</div></td>
+                </tr>
+            `;
+        });
+
+        // Render Agenda (Verde)
+        const agenda = document.getElementById('agendaContenedor');
+        agenda.innerHTML = "";
+        clientes.filter(c => c.cita).forEach(c => {
+            agenda.innerHTML += `
+                <div class="card" style="border-left: 5px solid var(--success); padding: 15px; display:flex; justify-content:space-between">
+                    <div>
+                        <span class="status status-interesado">CITA CONFIRMADA</span><br>
+                        <strong>Cliente: ${c.nombre} (ID: ${c.id})</strong><br>
+                        📅 ${c.cita.fecha} a las ${c.cita.hora}h | 📍 ${c.cita.lugar}
+                    </div>
+                    <button class="btn-delete" onclick="eliminarCita(${c.id})">Finalizar Cita</button>
+                </div>
+            `;
+        });
+
+        // Render Seguimiento (Naranja)
+        const seguimiento = document.getElementById('seguimientoContenedor');
+        seguimiento.innerHTML = "";
+        clientes.filter(c => c.rellamada).forEach(c => {
+            seguimiento.innerHTML += `
+                <div class="card" style="border-left: 5px solid var(--warning); padding: 15px; display:flex; justify-content:space-between">
+                    <div>
+                        <span class="status status-seguimiento">PENDIENTE LLAMADA</span><br>
+                        <strong>Cliente: ${c.nombre} (ID: ${c.id})</strong><br>
+                        📞 Volver a llamar el: <b>${c.rellamada}</b>
+                    </div>
+                    <button class="btn-delete" onclick="eliminarSeguimiento(${c.id})">Llamada Realizada</button>
+                </div>
+            `;
+        });
+    }
+
+    renderAll();
+</script>
+
+</body>
+</html>
